@@ -1,11 +1,11 @@
 {
   "name": "qysc-web",
   "type": "module",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "description": "",
+  "description": "A TypeScript library for interacting with QYSC (QiYi Smart Cube) devices via Web Bluetooth API.",
   "exports": {
     "types": "./dist/index.d.ts",
     "import": "./dist/index.js",
@@ -22,15 +22,23 @@
     "bun"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/wobsoriano/pkg-name#readme",
+  "homepage": "https://github.com/simonkellly/qysc-web",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/wobsoriano/pkg-name.git"
+    "url": "git+https://github.com/simonkellly/qysc-web.git"
   },
-  "bugs": "https://github.com/wobsoriano/pkg-name/issues",
-  "author": "Robert Soriano <sorianorobertc@gmail.com>",
+  "bugs": "https://github.com/simonkellly/qysc-web/issues",
+  "author": "Simon Kelly",
   "devDependencies": {
     "bun-plugin-dts": "^0.3.0",
-    "@types/bun": "^1.1.10"
+    "@types/bun": "^1.1.10",
+    "@types/aes-js": "^3.1.4",
+    "@types/web-bluetooth": "^0.0.21"
+  },
+  "dependencies": {
+    "aes-js": "^3.1.2",
+    "crypto-js": "^4.2.0",
+    "cubing": "^0.56.0",
+    "rxjs": "^7.8.2"
   }
 }
