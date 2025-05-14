@@ -1,17 +1,47 @@
 import { connectQYSC } from "qysc-web";
 import { TwistyPlayer } from "cubing/twisty";
 import { experimentalSolve3x3x3IgnoringCenters } from "cubing/search";
+import './index.css';
+
+const app = document.getElementById('app')!;
+app.innerHTML = `
+  <h1>QYSC Web</h1>
+  <h3>
+    <a href="https://github.com/simonkellly/qysc-web">GitHub</a>
+    <a href="https://www.npmjs.com/package/qysc-web">NPM</a>
+  </h3>
+  <p id="status">No cube connected</p>
+  <div>
+    <button id="connect">Connect</button>
+    <button id="disconnect">Disconnect</button>
+    <button id="reset">Mark Solved</button>
+    <button id="clear">Clear Moves</button>
+  </div>
+  <p id="moves" style="font-family: monospace;">
+    Moves will be displayed here
+  </p>
+  <div id="player" />
+`;
 
 let sync: (() => Promise<void>) | undefined = undefined;
+let disconnect: (() => Promise<void>) | undefined = undefined;
 
-async function doTheCube() {
+const movesParagraph = document.getElementById('moves')!;
+const status = document.getElementById('status')!;
+
+const player = new TwistyPlayer({});
+document.getElementById('player')?.appendChild(player);
+
+document.getElementById('connect')?.addEventListener('click', async () => {
   const cube = await connectQYSC();
   sync = cube.sync;
-
+  disconnect = cube.disconnect;
+  
   // Handle state changes
   cube.events.state.subscribe(async (event) => {
     if (event.type === 'state' || event.type === 'freshState') return;
 
+    status!.textContent = `Cube connected: ${cube.name}`;
     const solution = await experimentalSolve3x3x3IgnoringCenters(event.pattern);
     const scramble = solution.invert();
     movesParagraph.textContent = '';
@@ -20,44 +50,26 @@ async function doTheCube() {
 
   // Handle moves
   cube.events.moves.subscribe((move) => {
-    const span = document.createElement('span');
-    span.textContent = move + ' ';
-    span.style.color = 'black';
-    movesParagraph.appendChild(span);
+    movesParagraph.textContent += move + ' ';
     player.experimentalAddMove(move.move);
   });
-}
+});
 
-const app = document.getElementById('app');
+document.getElementById('disconnect')?.addEventListener('click', async () => {
+  if (disconnect) {
+    await disconnect();
+    status.textContent = 'No cube connected';
+    movesParagraph.textContent = '';
+    player.alg = "";
+  }
+});
 
-// Create paragraph for moves
-const movesParagraph = document.createElement('p');
-movesParagraph.style.fontFamily = 'monospace';
-movesParagraph.style.whiteSpace = 'pre-wrap';
-movesParagraph.style.marginBottom = '10px';
-app?.appendChild(movesParagraph);
+document.getElementById('reset')?.addEventListener('click', async () => {
+  if (sync) {
+    await sync();
+  }
+});
 
-// Create reset button
-const resetButton = document.createElement('button');
-resetButton.textContent = 'Reset Moves';
-resetButton.style.marginBottom = '10px';
-resetButton.addEventListener('click', () => {
+document.getElementById('clear')?.addEventListener('click', () => {
   movesParagraph.textContent = '';
 });
-app?.appendChild(resetButton);
-
-const player = new TwistyPlayer({});
-app?.appendChild(player);
-
-const button = document.createElement('button');
-button.textContent = 'Do Functionality';
-button.addEventListener('click', doTheCube);
-app?.appendChild(button);
-
-const syncButton = document.createElement('button');
-syncButton.textContent = 'Sync';
-syncButton.addEventListener('click', async () => {
-  sync && await sync();
-  player.alg = "";
-});
-app?.appendChild(syncButton);

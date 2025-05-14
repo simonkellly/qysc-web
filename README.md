@@ -2,6 +2,8 @@
 
 A TypeScript library for interacting with QYSC (QiYi Smart Cube) devices via Web Bluetooth API.
 
+A sample app can be seen at https://simonkellly.github.io/qysc-web
+
 ## Features
 
 - Web Bluetooth integration for QYSC devices
