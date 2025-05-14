@@ -11,7 +11,7 @@ app.innerHTML = `
     <a href="https://www.npmjs.com/package/qysc-web">NPM</a>
   </h3>
   <p id="status">No cube connected</p>
-  <div>
+  <div class="button-container">
     <button id="connect">Connect</button>
     <button id="disconnect">Disconnect</button>
     <button id="reset">Mark Solved</button>
@@ -29,7 +29,18 @@ let disconnect: (() => Promise<void>) | undefined = undefined;
 const movesParagraph = document.getElementById('moves')!;
 const status = document.getElementById('status')!;
 
-const player = new TwistyPlayer({});
+const player = new TwistyPlayer({
+  background: 'none',
+  hintFacelets: 'none',
+  controlPanel: 'none',
+  cameraLatitude: 25,
+  cameraLongitude: 25,
+  tempoScale: 5,
+  backView: 'top-right'
+});
+player.style.width = 'calc(500px - 4rem)';
+player.style.height = '200px';
+
 document.getElementById('player')?.appendChild(player);
 
 document.getElementById('connect')?.addEventListener('click', async () => {
