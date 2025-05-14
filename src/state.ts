@@ -102,7 +102,6 @@ const createCubeState = async () => {
     },
     [CubeOperations.CubeState]: (data: CubeStateData) => {
       const pattern = stateToPattern(data.cubeState);
-      cubeStateEvents.next({ type: 'state', pattern });
 
       const moves: CubeMoveEvent[] = [];
       const move = getMove(data);
@@ -151,10 +150,10 @@ const createCubeState = async () => {
       for (const move of moves) {
         cubeMoveEvents.next(move);
       }
+      cubeStateEvents.next({ type: 'state', pattern });
     },
     [CubeOperations.CubeFreshState]: (data: CubeFreshStateData) => {
       const pattern = stateToPattern(data.cubeState);
-      cubeStateEvents.next({ type: 'freshState', pattern });
 
       const actualState = stateToPattern(data.cubeState);
       const currentState = lastState ? lastState : actualState;
@@ -162,10 +161,16 @@ const createCubeState = async () => {
       lastTimestamp = data.timestamp;
       lastState = actualState;
 
-      if (currentState.isIdentical(actualState)) return;
+      if (currentState.isIdentical(actualState)) {
+        cubeStateEvents.next({ type: 'freshState', pattern });
+        return;
+      }
       
       const foundMoves = identifyMoves(currentState, actualState);
-      if (!foundMoves || foundMoves.length === 0) return;
+      if (!foundMoves || foundMoves.length === 0) {
+        cubeStateEvents.next({ type: 'freshState', pattern });
+        return;
+      }
 
       for (const move of foundMoves) {
         cubeMoveEvents.next({
@@ -173,6 +178,7 @@ const createCubeState = async () => {
         });
       }
       console.log('FreshState found moves: ', foundMoves);
+      cubeStateEvents.next({ type: 'freshState', pattern });
     },
   } as const;
 

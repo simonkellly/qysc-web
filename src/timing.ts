@@ -134,7 +134,7 @@ export function cubeTimestampLinearFit(cubeMoves: Array<CubeMoveEvent>): Array<{
     return [];
   }
 
-  const interpolatedCubeTs = interpolateTimestampValues(cubeMoves.map(m => (m.cubeTimestamp ?? 0) / 1.6));
+  const interpolatedCubeTs = interpolateTimestampValues(cubeMoves.map(m => m.cubeTimestamp ? m.cubeTimestamp / 1.6 : m.cubeTimestamp));
   const interpolatedLocalTs = interpolateTimestampValues(cubeMoves.map(m => m.localTimestamp));
 
   var [slope, intercept] = linregress(interpolatedCubeTs, interpolatedLocalTs);
