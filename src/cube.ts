@@ -92,7 +92,7 @@ export async function connectQYSC() {
     if (freshStateTimeout) clearTimeout(freshStateTimeout);
     freshStateTimeout = setTimeout(async () => {
       await operationQueue.enqueue(() => characteristic.writeValue(freshStatePacket()));
-    }, 100);
+    }, 250);
   });
 
   return {
