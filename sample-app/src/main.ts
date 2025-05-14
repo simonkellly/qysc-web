@@ -3,12 +3,10 @@ import { TwistyPlayer } from "cubing/twisty";
 import { experimentalSolve3x3x3IgnoringCenters } from "cubing/search";
 
 let sync: (() => Promise<void>) | undefined = undefined;
-let freshState: (() => Promise<void>) | undefined = undefined;
 
 async function doTheCube() {
   const cube = await connectQYSC();
   sync = cube.sync;
-  freshState = cube.freshState;
 
   // Handle state changes
   cube.events.state.subscribe(async (event) => {

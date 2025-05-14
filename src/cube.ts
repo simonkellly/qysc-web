@@ -1,7 +1,11 @@
-import { QYSC_CHARACTERISTIC, QYSC_MAC_PREFIX, QYSC_NAME_PREFIX, QYSC_SERVICE } from "./constants";
-import { solvedState } from "./stateUtils";
+import { solvedState } from "./lib/stateUtils";
 import { ackPacket, decodePacket, helloPacket, syncPacket, freshStatePacket } from "./protocol";
-import createCubeState from "./cubeState";
+import createCubeState from "./state";
+
+export const QYSC_NAME_PREFIX = 'QY-QYSC';
+export const QYSC_SERVICE = 0xfff0;
+export const QYSC_CHARACTERISTIC = 0xfff6;
+export const QYSC_MAC_PREFIX = [0xcc, 0xa3, 0x00, 0x00];
 
 class GattOperationQueue {
   private queue: Array<() => Promise<void>> = [];

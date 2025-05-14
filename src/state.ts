@@ -1,6 +1,6 @@
 import { CubeFreshStateData, CubeHelloData, CubeOperations, CubeStateData, CubeSyncData } from "./protocol";
 import type { KPattern } from "cubing/kpuzzle";
-import { stateToPattern } from "./stateUtils";
+import { stateToPattern } from "./lib/stateUtils";
 import { Subject } from 'rxjs';
 import { cube3x3x3 } from "cubing/puzzles";
 import { now } from "./timing";

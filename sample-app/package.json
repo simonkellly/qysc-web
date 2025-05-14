@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "cubing": "^0.56.0",
-    "qysc-web": "file:../"
+    "qysc-web": "link:qysc-web"
   },
   "devDependencies": {
     "typescript": "~5.8.3",

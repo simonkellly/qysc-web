@@ -50,6 +50,9 @@ bun install
 
 # Build the project
 bun run build
+
+# Link the package for the sample app
+bun link qysc-web
 ```
 
 ## Contributing

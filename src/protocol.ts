@@ -1,11 +1,9 @@
-// encrypt via AES128 in ECB
-// decrypt via AES128 in ECB
-
 import { ModeOfOperation } from "aes-js";
-import { QYSC_AES_KEY, QYSC_MAGIC_BYTE } from "./constants";
 import crc16modbus from "./lib/crc";
 
-// Magic byte: 0xfe
+export const QYSC_AES_KEY = new Uint8Array([87, 177, 249, 171, 205, 90, 232, 167, 156, 185, 140, 231, 87, 140, 81, 8]);
+export const QYSC_MAGIC_BYTE = 0xfe;
+
 const crypter = new ModeOfOperation.ecb(QYSC_AES_KEY);
 
 export function getPacket(message: Uint8Array) {
