@@ -56,7 +56,7 @@ const defaultHandler = (packet: Uint8Array) => ({
   raw: packet,
   length: packet[1],
   opcode: packet[2] as CubeOperations,
-  timestamp: (packet[3] << 24) | (packet[4] << 16) | (packet[5] << 8) | packet[6],
+  timestamp: ((packet[3] << 24) | (packet[4] << 16) | (packet[5] << 8) | packet[6]) / 1.6,
   battery: packet[35],
   wholeData: packet.slice(7, packet.length - 2),
 });

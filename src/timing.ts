@@ -17,7 +17,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import type { CubeMoveEvent } from "./state";
+import { CubeMoveEvent } from "./state";
 
 export const now: () => number =
     typeof window != 'undefined' && typeof window.performance?.now == 'function' ?
@@ -25,6 +25,73 @@ export const now: () => number =
         typeof process != 'undefined' && typeof process.hrtime?.bigint == 'function' ?
             () => Number(process.hrtime.bigint() / 1_000_000n) :
             () => Date.now();
+
+function interpolateTimestampValues(
+    values: Array<number | null | undefined>
+): Array<number | null> {
+    const n = values.length;
+    if (n === 0) {
+        return [];
+    }
+
+    const processedValues = values.map(v => (v === undefined ? null : v));
+
+    const presentIndices: number[] = [];
+    for (let i = 0; i < n; i++) {
+        if (processedValues[i] != null) {
+            presentIndices.push(i);
+        }
+    }
+
+    if (presentIndices.length === 0) {
+        return processedValues.slice();
+    }
+
+    const interpolated_values: Array<number | null> = processedValues.slice();
+
+    if (presentIndices.length === 1) {
+        const singleValue = processedValues[presentIndices[0]]!;
+        for (let i = 0; i < n; i++) {
+            if (interpolated_values[i] === null) {
+                interpolated_values[i] = singleValue;
+            }
+        }
+        return interpolated_values;
+    }
+
+    const firstPresentIdx = presentIndices[0];
+    const firstPresentVal = processedValues[firstPresentIdx]!;
+    for (let i = 0; i < firstPresentIdx; i++) {
+        if (interpolated_values[i] === null) {
+            interpolated_values[i] = firstPresentVal;
+        }
+    }
+
+    const lastPresentIdx = presentIndices[presentIndices.length - 1];
+    const lastPresentVal = processedValues[lastPresentIdx]!;
+    for (let i = lastPresentIdx + 1; i < n; i++) {
+        if (interpolated_values[i] === null) {
+            interpolated_values[i] = lastPresentVal;
+        }
+    }
+
+    for (let k = 0; k < presentIndices.length - 1; k++) {
+        const prevIdx = presentIndices[k];
+        const nextIdx = presentIndices[k + 1];
+        const prevVal = processedValues[prevIdx]!;
+        const nextVal = processedValues[nextIdx]!;
+
+        if (nextIdx - prevIdx > 1) {
+            for (let i = prevIdx + 1; i < nextIdx; i++) {
+                if (interpolated_values[i] === null) {
+                    const t = (i - prevIdx) / (nextIdx - prevIdx);
+                    interpolated_values[i] = Math.round(prevVal + t * (nextVal - prevVal));
+                }
+            }
+        }
+    }
+    return interpolated_values;
+}
 
 function linregress(X: Array<number | null>, Y: Array<number | null>) {
   var sumX = 0;
@@ -63,48 +130,38 @@ export function cubeTimestampLinearFit(cubeMoves: Array<CubeMoveEvent>): Array<{
   cubeTimestamp: number
   localTimestamp: number
 }> {
+  if (cubeMoves.length === 0) {
+    return [];
+  }
+
+  const interpolatedCubeTs = interpolateTimestampValues(cubeMoves.map(m => m.cubeTimestamp));
+  const interpolatedLocalTs = interpolateTimestampValues(cubeMoves.map(m => m.localTimestamp));
+
+  var [slope, intercept] = linregress(interpolatedCubeTs, interpolatedLocalTs);
+
+  let firstReferenceCubeTs = interpolatedCubeTs.find(ts => ts !== null) ?? 0;
+
+
+  var first = Math.round(slope * firstReferenceCubeTs + intercept);
+  
   var res: Array<{
     move: CubeMoveEvent['move']
     cubeTimestamp: number
     localTimestamp: number
   }> = [];
-  // Calculate and fix timestamp values for missed and recovered cube moves.
-  if (cubeMoves.length >= 2) {
-      // 1st pass - tail-to-head, align missed move cube timestamps to next move -50ms
-      for (let i = cubeMoves.length - 1; i > 0; i--) {
-          if (cubeMoves[i].cubeTimestamp != null && cubeMoves[i - 1].cubeTimestamp == null)
-              cubeMoves[i - 1].cubeTimestamp = cubeMoves[i].cubeTimestamp! - 50;
-      }
 
-      // do the same for local
-      for (let i = cubeMoves.length - 1; i > 0; i--) {
-        if (cubeMoves[i].localTimestamp != null && cubeMoves[i - 1].localTimestamp == null)
-            cubeMoves[i - 1].localTimestamp = cubeMoves[i].localTimestamp! - 50;
-    }
+  for (let i = 0; i < cubeMoves.length; i++) {
+    const moveData = cubeMoves[i];
+    const currentLocalTs = interpolatedLocalTs[i];
+    const currentCubeTs = interpolatedCubeTs[i];
 
-      // 2nd pass - head-to-tail, align missed move cube timestamp to prev move +50ms
-      for (let i = 0; i < cubeMoves.length - 1; i++) {
-          if (cubeMoves[i].cubeTimestamp != null && cubeMoves[i + 1].cubeTimestamp == null)
-              cubeMoves[i + 1].cubeTimestamp = cubeMoves[i].cubeTimestamp! + 50;
-      }
+    const transformedCubeTimestamp = currentCubeTs ? Math.round(slope * currentCubeTs + intercept) - first : 0;
 
-      // do the same for local
-      for (let i = 0; i < cubeMoves.length - 1; i++) {
-        if (cubeMoves[i].localTimestamp != null && cubeMoves[i + 1].localTimestamp == null)
-            cubeMoves[i + 1].localTimestamp = cubeMoves[i].localTimestamp! + 50;
-    }
-  }
-  // Apply linear regression to the cube timestamps
-  if (cubeMoves.length > 0) {
-      var [slope, intercept] = linregress(cubeMoves.map(m => m.cubeTimestamp!), cubeMoves.map(m => m.localTimestamp!));
-      var first = Math.round(slope * cubeMoves[0].cubeTimestamp! + intercept);
-      cubeMoves.forEach(m => {
-          res.push({
-              move: m.move,
-              localTimestamp: m.localTimestamp!,
-              cubeTimestamp: Math.round(slope * m.cubeTimestamp! + intercept) - first
-          });
-      });
+    res.push({
+      move: moveData.move,
+      localTimestamp: currentLocalTs ?? 0, // Ensure number type, default to 0 if null
+      cubeTimestamp: transformedCubeTimestamp,
+    });
   }
   return res;
 }
