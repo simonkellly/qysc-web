@@ -141,6 +141,7 @@ const createCubeState = async () => {
               move: m as CubeMoveEvent['move'],
             });
           });
+          console.log('Needs additional moves for state: ', foundMoves);
         }
       }
 
@@ -171,6 +172,7 @@ const createCubeState = async () => {
           move: move as CubeMoveEvent['move'],
         });
       }
+      console.log('FreshState found moves: ', foundMoves);
     },
   } as const;
 

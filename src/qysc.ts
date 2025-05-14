@@ -3,6 +3,38 @@ import { solvedState } from "./stateUtils";
 import { ackPacket, decodePacket, helloPacket, syncPacket, freshStatePacket } from "./protocol";
 import createCubeState from "./cubeState";
 
+class GattOperationQueue {
+  private queue: Array<() => Promise<void>> = [];
+  private processing = false;
+
+  async enqueue<T>(operation: () => Promise<T>): Promise<T> {
+    return new Promise((resolve, reject) => {
+      this.queue.push(async () => {
+        try {
+          const result = await operation();
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      });
+      this.processQueue();
+    });
+  }
+
+  private async processQueue() {
+    if (this.processing || this.queue.length === 0) return;
+
+    this.processing = true;
+    while (this.queue.length > 0) {
+      const operation = this.queue.shift();
+      if (operation) {
+        await operation();
+      }
+    }
+    this.processing = false;
+  }
+}
+
 export type QYSC = Awaited<ReturnType<typeof connectQYSC>>;
 
 export async function connectQYSC() {
@@ -14,6 +46,7 @@ export async function connectQYSC() {
   if (!btCube || !btCube.gatt) throw new Error("No device found");
 
   const server = await btCube.gatt.connect();
+  const operationQueue = new GattOperationQueue();
 
   const service = await server.getPrimaryService(QYSC_SERVICE);
   const characteristic = await service.getCharacteristic(QYSC_CHARACTERISTIC);
@@ -28,14 +61,14 @@ export async function connectQYSC() {
       const data = decodePacket(packet);
 
       if (data.needsAck) {
-        await characteristic.writeValue(ackPacket(data.raw));
+        await operationQueue.enqueue(() => characteristic.writeValue(ackPacket(data.raw)));
       }
 
       cubeState.handler[data.opcode](data as any);
     }
   );
 
-  await characteristic.startNotifications();
+  await operationQueue.enqueue(() => characteristic.startNotifications());
 
   // name like QY-QYSC-S-01C4 -> 0x01, 0xC4
   const trimmedName = btCube.name!.trim();
@@ -47,15 +80,15 @@ export async function connectQYSC() {
   ]);
 
   const hello = helloPacket(mac);
-  await characteristic.writeValue(hello);
+  await operationQueue.enqueue(() => characteristic.writeValue(hello));
 
   let freshStateTimeout: Timer | undefined = undefined;
   cubeState.cubeStateEvents.subscribe(ev => {
     if (ev.type !== 'state') return;
     if (freshStateTimeout) clearTimeout(freshStateTimeout);
     freshStateTimeout = setTimeout(async () => {
-      await characteristic.writeValue(freshStatePacket());
-    }, 200);
+      await operationQueue.enqueue(() => characteristic.writeValue(freshStatePacket()));
+    }, 100);
   });
 
   return {
@@ -63,10 +96,10 @@ export async function connectQYSC() {
     sync: async () => {
       const state = solvedState();
       const packet = syncPacket(state);
-      await characteristic.writeValue(packet);
+      await operationQueue.enqueue(() => characteristic.writeValue(packet));
     },
     freshState: async () => {
-      await characteristic.writeValue(freshStatePacket());
+      await operationQueue.enqueue(() => characteristic.writeValue(freshStatePacket()));
     },
     disconnect: async () => {
       btCube.gatt?.disconnect();
@@ -75,5 +108,5 @@ export async function connectQYSC() {
       state: cubeState.cubeStateEvents,
       moves: cubeState.cubeMoveEvents,
     }
-  }
+  };
 }
