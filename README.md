@@ -1,5 +1,8 @@
 # QYSC Web
 
+## DEPRECIATED
+This library has been superceeded by [btcube-web](https://github.com/simonkellly/btcube-web) which has support for moyu cubes as well as qiyi. No further development will be done on this library, and all contributions should be directed towards btcube-web
+
 A TypeScript library for interacting with QYSC (QiYi Smart Cube) devices via Web Bluetooth API.
 
 This library is availible on the NPM registry at https://www.npmjs.com/package/qysc-web
